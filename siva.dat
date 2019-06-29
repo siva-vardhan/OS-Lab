@@ -1,0 +1,145 @@
+Delete System Call
+Description: Deletes a file in the disk with the filename given as argument. 
+System Call No: 4 
+Interrupt No: 1 
+Arguments: filename 
+Return Value: 0 (Success) or -1 (Failure) 
+
+(Before continuing, see how APL translates Delete system call in Delete system call translation)
+
+The delete system call will only work if the file exists, and it is not opened by any process. If both the conditions are satisfied then mark the entries corresponding to the basic block and data blocks of the file as unused in the disk free list. Also, the FAT entry corresponding to the file must be invalidated. Detailed instructions to do this is given below.
+
+Check if the file to be deleted exists in the disk. To do this, search the memory copy of FAT for the filename specified as argument. If it is not found, return from the system call with -1 (failure). If an entry is found, store the index in a register.
+
+Search the System Wide Open File Table to see if the file has been opened. If a file is opened, an entry with the FAT index found in the previous step will be present in the System Wide Open file table. If it is opened, return from the system call with -1 (failure)
+
+Otherwise, follow the steps to delete the file
+
+Load the Basic Block to the Scratchpad. The Basic Block contains the block numbers of all the data blocks of the file. Load the first data block from disk to the scratchpad. Erase all values in the data file, by storing ""(empty string) in every word. Store back the data block to the disk from the scratchpad. This data block must be set as unused in the memory copy of the Disk Free List. Do this step again for the second, third, fourth data blocks and so on.
+Erase all vallues of the basic block of the file, by storing "" (empty stirng) to every word. Save back the basic block to the disk
+Set the entry for the basic block of the file in the Disk Free List to 0 (unused)
+Invalidate the FAT entry by setting -1 in the filename filed and Basic Block Number field.
+Store back the FAT and Disk Free List from the memory to the disk. These data structures are actually disk data structures. To change the entries of these structures, they have a corresponding memory copy. Once a change is made, the memory copies must be stored back to the disk to reflect the changes on the disk as well.
+
+Return from the system call with 0 (success)
+
+NOTE: In UNIX, the end of files are marked using a special EOF character, and filesize is calculated as the number of bytes from the first byte to the EOF character. However in XOS, file size is always multiple of 512 and there is no EOF character. If a block is allocated to a file, that entire block will be considered part of the file. Hence erasing data blocks and basic blocks is necessary when a file is deleted, so that junk words in a data block of a deleted file won't appear in a newly created file when this block is reallocated for it.
+
+Exercise :
+Write an APL program to create a file (eg. "myfile.dat") using the Create system call. Check whether the file exists in the disk using XFS interface.
+Write another program to delete the file ("myfile.dat") created earlier.
+Open a file and try to delete the file before executing a Close system call. It should return an error since opened files cannot deleted unless they are closed. Now try to delete after executing the Close system call. This should successfully delete the file. Check using ls command in XFS interface to see if the file is deleted. Check the basic block and data blocks of the file to see if its erased completely
+Write System Call
+Description: Used to write a single word to a file opened by the process
+System Call No: 5 
+Interrupt No: 4 
+Arguments: 1. fileDescriptor, 2. wordToWrite 
+Return Value: 0 (Success) or -1 (Failure) 
+
+(Before continuing, see how APL translates Write system call in Write system call translation)
+
+The Write system call takes the fileDescriptor given as argument to identify the file open instance in the per-process file table. The wordToWrite given as argument is to be written to the file at the LSEEK position obtained from the per-process open file table. A new block must be allocated if required. The following steps must be done to perform all these required actions.
+
+Return from the system call with -1, indicating failure if the fileDescriptor specified as argument is invalid.
+
+Index into the per-process open file table in the PCB of the process with the fileDescriptor. If the entry is invalid, which is indicated by a -1 in the first field of the entry (pointer to System-wide Open File Table entry), return from the system call with -1, indicating failure.
+
+If a valid entry exists, store the Pointer to System Wide Open File Table Entry field and LSEEK position field in registers.
+
+Using the Pointer to System Wide Open File Table Entry, index to the System Wide Open File Table to get the FAT Index field.
+
+Using the FAT Index, fetch the Basic Block from the FAT and load it to the scratchpad. This is done to find the block to which the word is to be written to. The basic block contains block numbers of all data blocks of the file.
+
+Using LSEEK position, find the block number to which the word is to be written to. LSEEK position is the word number in the file at which reading or writing takes place. The LSEEK position divided by 512 gives the index of the basic block entry. This entry will have the block number of the data block to which the word is to be written. If this entry is invalid indicated by -1, then allocate a new block in the following way.
+
+Find a free block in the disk. To do this traverse through the memory copy of the Disk Free List till the entry for block 447 (Blocks 448 onwards is Swap, which is reserved for virtual memory management).
+If no free block is available. Return from the system call, with return value -1 indicating failure
+Otherwise, set 1 in the entry for the free block in the Disk Free List.
+Add this block number to the basic block of the file.
+Commit the basic block from scratchpad back to the disk.
+Increment the file size in the FAT entry by 512. This indicates that a new data block is added to the file. One data block occupies 512 words.
+Commit the FAT and Disk Free List from the memory to the disk.
+Fetch the block from the disk to the scratchpad. Changes are made to this block after loading it to memory. The scratchpad is a temporary location to load disk blocks from the disk to memory. The memory page in the scratchpad is stored back to the location after making the changes.
+
+Write the argument wordToWrite to this block loaded in the scratchpad at the seek position or offset. The offset is calculated using LSEEK position. LSEEK modulo 512 will give the offest into the block at which the word is to be written to.
+
+Store this block back to disk. This is done to reflect changes made to this block on the disk.
+
+Increment LSEEK Position by 1 in the Per-Process Open File Table. This is because one new word has been written and LSEEK position must be pointing to the next word.
+
+Return from the system call with 0, indicating success.
+
+
+Seek System Call
+Description: Changes the LSEEK position
+System Call No: 6 
+Interrupt No: 3 
+Arguments: 1. fileDescriptor 2. newLseek 
+Return Value: 0 (Success) or -1 (Failure) 
+
+(Before continuing, see how APL translates Seek system call in Seek system call translation)
+
+The Seek system call changes the word at which read/write operations take place within a file. This word is indicated by the LSEEK field in the per-process open file table entry of the open file. This field is modified to newLseek if the newLseek value is valid, i.e. the word lies within the file. Detailed instructions on getting this done is given below:
+
+Return from the system call with -1, indicating failure if the fileDescriptor specified as argument is invalid.
+
+Index into the per-process open file table in the PCB of the process with the fileDescriptor. If the entry is invalid, return from the system call with -1, indicating failure.
+
+If a valid entry exists, store the Pointer to System Wide Open File Table Entry field in a register.
+
+Using the Pointer to System Wide Open File Table Entry field, index to the System Wide Open File Table to get the FAT Index Entry.
+
+Fetch the file size of the file from the FAT and store it in a register.
+
+LSEEK position is valid if it takes a value from 0 to file size. Check if the new LSEEK position specified as argument is valid. If it is not valid, return from the system call with -1, indicating failure.
+
+Change the LSEEK in the per-process file table to newLseek.
+
+Return with 0 (indicating success).
+
+
+Read System Call
+Description: Reads a word from a file to the variable passed as argument. 
+System Call No: 7 
+Interrupt No: 3 
+Arguments: 1) fileDescriptor 2) wordRead
+Return Value: 0 (success) and -1 (failure) 
+
+(Before continuing, see how APL translates Read system call in Read system call translation)
+
+The Read system call takes the fileDescriptor given as argument to identify the open instance of the file in the per-process file table. Read system call is used to read one word at the position pointed to by LSEEK in the file and store it in the variable wordRead specified as argument in APL. Follow these steps to get this done.
+
+Return from the system call with -1, indicating failure if the fileDescriptor specified as argument is invalid.
+
+Index into the per-process open file table in the PCB of the process with the fileDescriptor. If the entry is invalid return from the system call with -1, indicating failure.
+
+If a valid entry exists, store the Pointer to System Wide Open File Table Entry field and LSEEK position field in registers.
+
+Using the Pointer to System Wide Open File Table Entry, index to the System Wide Open File Table to get the FAT Index field.
+
+Using the FAT Index, fetch the Basic Block from the FAT and load it to the scratchpad. This is done to find the block from which the word is to be read. The basic block contains block numbers of all data blocks of the file.
+
+Check if LSEEK position is at the end of the file. If it is at the end of the file, then there is no word to be read. Return from the system call with -1 indicating error. At the end of the file, LSEEK position value will be equal to file size.
+
+Using LSEEK position, find the block number of the data block from which the word is to be read. The data block number can be obtained from the basic block of the file as explained in Write system call.
+
+Fetch the block from the disk to the scratchpad.
+
+Read from this block using the offset calculated using LSEEK position.
+
+The word that is read is stored in the stack in position of Argument 2 (wordRead). The application programmer using this system call, gives a variable as the 2nd argument for the system call. This word that is read will get stored in that variable. This is similar to Call-by-reference argument passing mechanism in programming languages. To do this store the word read to physicalSP - 3.
+
+Increment LSEEK Position by 1 in the Per-Process Open File Table. This is because a word is read and LSEEK position must be pointing to the next word.
+
+Return with 0, indicating success
+NOTE 1: In real operating systems, read and write does not reflect on the disk immediately as in XOS. A concept called file caching is used, where blocks of the file is temporarily stored in an area in the memory known as the system file cache. A pointer to the file cache is maintained in the per-process file table or the system-wide open file table. Read and write take place in this cache and the changes are committed to disk at a later point or when the file is closed. The policy of delaying the writing of the data to the file and holding it in the cache until the cache is flushed is called lazy writing. (Read File Caching in Windows)
+
+NOTE 2: The read and write system calls are blocking system calls in real operating systems. When a process issues a read/write system call, the OS will block the process. This is done by setting the STATE field in the PCB to Waiting (this state is not available in XOS). It will then invoke DMA (Direct Memory Access) controller, to transfer blocks from disk to memory or back directly. It schedules another process for execution and transfers control to the new process. After the reading or writing is done, the DMA controller sends a signal back to the processor which invokes an interrupt. This interrupt wakes up the process which issued the read/write system call. This is done by setting up the return value for the system call in the stack of the process and changing the STATE of the process to Ready. The interrupt routine will return back to the currently running The scheduler is responsible for fetching the ready process (which issued the read/write system call) for execution at a later point in time.
+
+In XOS, they are implemented as non-blocking system calls, with machine instructions like LOAD and STORE to transfer disk blocks to and from memory. The corresponding interrupt routines make use of these instructions. The Read/Write system calls in XOS which read or write one words at a time are (over) simplifications of the actual read and write system calls in UNIX and other operating systems.
+
+Exercise :
+Try invoking the Read, Seek and Write system calls without creating or opening a file. Try to read from an empty file. These should return errors.
+Change the seek position to the end of the file and try to write a new word into it. Try changing the seek position to an invalid location (greater than filesize).
+Open a file and write some words into that file. Open the same file again and read the words using the new file descriptor.
+

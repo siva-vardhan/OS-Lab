@@ -1,0 +1,99 @@
+//breakpoint;
+alias physicalSP S0;
+physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];
+if(sysCallNo==9) then
+
+	//breakpoint;
+
+	alias filename S2;
+	filename=[physicalSP-3];
+	alias counter S3;
+	counter=0;
+	while(counter<64) do
+		if([FAT+counter*8]==filename) then
+			break;
+		endif;
+		counter=counter+1;
+	endwhile;
+	if(counter==64) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	
+	//breakpoint;
+	
+	alias counter1 S4;
+	alias basic S5;
+	basic=[FAT+8*counter+2];
+	load(1,basic);
+	counter1=0;
+	while(counter1<3) do
+		if([PTBR+2*counter1+1]=="01" || [PTBR+2*counter1+1]=="11") then
+			[1280+[PTBR+2*counter1]]=[1280+[PTBR+2*counter1]]-1;
+		else 
+			if([PTBR+2*counter1]>=448) then
+				[6*512+[PTBR+2*counter1]]=[6*512+[PTBR+2*counter1]]-1;
+				store(6,20);
+			endif;
+		endif;
+		//if([512+counter1]!=-1) then
+			[PTBR+2*counter1]=[512+counter1];
+			[PTBR+2*counter1+1]="00";
+		//endif;
+		counter1=counter1+1;
+	endwhile;
+	
+	[PTBR+7]="01";
+	
+	S11=0;
+	alias pid S13;
+	pid=(PTBR-1024)/8;
+	alias p1 S12;
+	while(S11<8) do
+		p1=[READY_LIST+32*pid+15+S11*2];
+		[READY_LIST+32*pid+15+S11*2]=-1;
+		if(p1>=0 && p1<64) then
+			if([FILE_TABLE+p1*2+1]>1) then
+				[FILE_TABLE+p1*2+1]=[FILE_TABLE+p1*2+1]-1;
+			else
+				[FILE_TABLE+p1*2]=-1;
+				[FILE_TABLE+p1*2+1]=0;
+			endif;
+		endif;
+		S11=S11+1;
+	endwhile;
+	
+	//breakpoint;
+	SP=3*512;
+	//SP=BP;
+	//alias stack S14;
+	pid=(PTBR-1024)/8;
+	//stack=[PTBR+pid*8+6];
+	
+	//[stack*512]=0;
+	physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+	[physicalSP]=0;
+	
+	//breakpoint;
+	
+	ireturn;
+endif;
+
+
+if(sysCallNo==11) then
+	alias pid S2;
+	pid=(PTBR-1024)/8;
+	[physicalSP-2]=pid;
+	ireturn;
+endif;
+
+
+
+if(sysCallNo==12) then
+	alias pid S2;
+	pid=(PTBR-1024)/8;
+	[physicalSP-2]=[READY_LIST+pid*32+31];
+	ireturn;
+endif;

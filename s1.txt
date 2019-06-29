@@ -1,0 +1,1102 @@
+
+
+
+
+Return from the
+ system call wi
+th 0, indicatin
+g success.
+
+
+
+
+
+Seek System Cal
+l
+
+Description: Ch
+anges the LSEEK
+ position
+
+System Call No:
+ 6 
+
+Interrupt No: 3
+ 
+
+Arguments: 1. f
+ileDescriptor 2
+. newLseek 
+
+Return Value: 0
+ (Success) or -
+1 (Failure) 
+
+
+
+(Before continu
+ing, see how AP
+L translates Se
+ek system call 
+in Seek system 
+call translatio
+n)
+
+
+
+The Seek system
+ call changes t
+he word at whic
+h read/write op
+erations take p
+lace within a f
+ile. This word 
+is indicated by
+ the LSEEK fiel
+d in the per-pr
+ocess open file
+ table entry of
+ the open file.
+ This field is 
+modified to new
+Lseek if the ne
+wLseek value is
+ valid, i.e. th
+e word lies wit
+hin the file. D
+etailed instruc
+tions on gettin
+g this done is 
+given below:
+
+
+
+Return from the
+ system call wi
+th -1, indicati
+ng failure if t
+he fileDescript
+or specified as
+ argument is in
+valid.
+
+
+
+Index into the 
+per-process ope
+n file table in
+ the PCB of the
+ process with t
+he fileDescript
+or. If the entr
+y is invalid, r
+eturn from the 
+system call wit
+h -1, indicatin
+g failure.
+
+
+
+If a valid entr
+y exists, store
+ the Pointer to
+ System Wide Op
+en File Table E
+ntry field in a
+ register.
+
+
+
+Using the Point
+er to System Wi
+de Open File Ta
+ble Entry field
+, index to the 
+System Wide Ope
+n File Table to
+ get the FAT In
+dex Entry.
+
+
+
+Fetch the file 
+size of the fil
+e from the FAT 
+and store it in
+ a register.
+
+
+
+LSEEK position 
+is valid if it 
+takes a value f
+rom 0 to file s
+ize. Check if t
+he new LSEEK po
+sition specifie
+d as argument i
+s valid. If it 
+is not valid, r
+eturn from the 
+system call wit
+h -1, indicatin
+g failure.
+
+
+
+Change the LSEE
+K in the per-pr
+ocess file tabl
+e to newLseek.
+
+
+
+Return with 0 (
+indicating succ
+ess).
+
+
+
+
+
+Read System Cal
+l
+
+Description: Re
+ads a word from
+ a file to the 
+variable passed
+ as argument. 
+
+System Call No:
+ 7 
+
+Interrupt No: 3
+ 
+
+Arguments: 1) f
+ileDescriptor 2
+) wordRead
+
+Return Value: 0
+ (success) and 
+-1 (failure) 
+
+
+
+(Before continu
+ing, see how AP
+L translates Re
+ad system call 
+in Read system 
+call translatio
+n)
+
+
+
+The Read system
+ call takes the
+ fileDescriptor
+ given as argum
+ent to identify
+ the open insta
+nce of the file
+ in the per-pro
+cess file table
+. Read system c
+all is used to 
+read one word a
+t the position 
+pointed to by L
+SEEK in the fil
+e and store it 
+in the variable
+ wordRead speci
+fied as argumen
+t in APL. Follo
+w these steps t
+o get this done
+.
+
+
+
+Return from the
+ system call wi
+th -1, indicati
+ng failure if t
+he fileDescript
+or specified as
+ argument is in
+valid.
+
+
+
+Index into the 
+per-process ope
+n file table in
+ the PCB of the
+ process with t
+he fileDescript
+or. If the entr
+y is invalid re
+turn from the s
+ystem call with
+ -1, indicating
+ failure.
+
+
+
+If a valid entr
+y exists, store
+ the Pointer to
+ System Wide Op
+en File Table E
+ntry field and 
+LSEEK position 
+field in regist
+ers.
+
+
+
+Using the Point
+er to System Wi
+de Open File Ta
+ble Entry, inde
+x to the System
+ Wide Open File
+ Table to get t
+he FAT Index fi
+eld.
+
+
+
+Using the FAT I
+ndex, fetch the
+ Basic Block fr
+om the FAT and 
+load it to the 
+scratchpad. Thi
+s is done to fi
+nd the block fr
+om which the wo
+rd is to be rea
+d. The basic bl
+ock contains bl
+ock numbers of 
+all data blocks
+ of the file.
+
+
+
+Check if LSEEK 
+position is at 
+the end of the 
+file. If it is 
+at the end of t
+he file, then t
+here is no word
+ to be read. Re
+turn from the s
+ystem call with
+ -1 indicating 
+error. At the e
+nd of the file,
+ LSEEK position
+ value will be 
+equal to file s
+ize.
+
+
+
+Using LSEEK pos
+ition, find the
+ block number o
+f the data bloc
+k from which th
+e word is to be
+ read. The data
+ block number c
+an be obtained 
+from the basic 
+block of the fi
+le as explained
+ in Write syste
+m call.
+
+
+
+Fetch the block
+ from the disk 
+to the scratchp
+ad.
+
+
+
+Read from this 
+block using the
+ offset calcula
+ted using LSEEK
+ position.
+
+
+
+The word that i
+s read is store
+d in the stack 
+in position of 
+Argument 2 (wor
+dRead). The app
+lication progra
+mmer using this
+ system call, g
+ives a variable
+ as the 2nd arg
+ument for the s
+ystem call. Thi
+s word that is 
+read will get s
+tored in that v
+ariable. This i
+s similar to Ca
+ll-by-reference
+ argument passi
+ng mechanism in
+ programming la
+nguages. To do 
+this store the 
+word read to ph
+ysicalSP - 3.
+
+
+
+Increment LSEEK
+ Position by 1 
+in the Per-Proc
+ess Open File T
+able. This is b
+ecause a word i
+s read and LSEE
+K position must
+ be pointing to
+ the next word.
+
+
+
+
+Return with 0, 
+indicating succ
+ess
+
+NOTE 1: In real
+ operating syst
+ems, read and w
+rite does not r
+eflect on the d
+isk immediately
+ as in XOS. A c
+oncept called f
+ile caching is 
+used, where blo
+cks of the file
+ is temporarily
+ stored in an a
+rea in the memo
+ry known as the
+ system file ca
+che. A pointer 
+to the file cac
+he is maintaine
+d in the per-pr
+ocess file tabl
+e or the system
+-wide open file
+ table. Read an
+d write take pl
+ace in this cac
+he and the chan
+ges are committ
+ed to disk at a
+ later point or
+ when the file 
+is closed. The 
+policy of delay
+ing the writing
+ of the data to
+ the file and h
+olding it in th
+e cache until t
+he cache is flu
+shed is called 
+lazy writing. (
+Read File Cachi
+ng in Windows)
+
+
+
+NOTE 2: The rea
+d and write sys
+tem calls are b
+locking system 
+calls in real o
+perating system
+s. When a proce
+ss issues a rea
+d/write system 
+call, the OS wi
+ll block the pr
+ocess. This is 
+done by setting
+ the STATE fiel
+d in the PCB to
+ Waiting (this 
+state is not av
+ailable in XOS)
+. It will then 
+invoke DMA (Dir
+ect Memory Acce
+ss) controller,
+ to transfer bl
+ocks from disk 
+to memory or ba
+ck directly. It
+ schedules anot
+her process for
+ execution and 
+transfers contr
+ol to the new p
+rocess. After t
+he reading or w
+riting is done,
+ the DMA contro
+ller sends a si
+gnal back to th
+e processor whi
+ch invokes an i
+nterrupt. This 
+interrupt wakes
+ up the process
+ which issued t
+he read/write s
+ystem call. Thi
+s is done by se
+tting up the re
+turn value for 
+the system call
+ in the stack o
+f the process a
+nd changing the
+ STATE of the p
+rocess to Ready
+. The interrupt
+ routine will r
+eturn back to t
+he currently ru
+nning The sched
+uler is respons
+ible for fetchi
+ng the ready pr
+ocess (which is
+sued the read/w
+rite system cal
+l) for executio
+n at a later po
+int in time.
+
+
+
+In XOS, they ar
+e implemented a
+s non-blocking 
+system calls, w
+ith machine ins
+tructions like 
+LOAD and STORE 
+to transfer dis
+k blocks to and
+ from memory. T
+he correspondin
+g interrupt rou
+tines make use 
+of these instru
+ctions. The Rea
+d/Write system 
+calls in XOS wh
+ich read or wri
+te one words at
+ a time are (ov
+er) simplificat
+ions of the act
+ual read and wr
+ite system call
+s in UNIX and o
+ther operating 
+systems.
+
+
+
+Exercise :
+
+Try invoking th
+e Read, Seek an
+d Write system 
+calls without c
+reating or open
+ing a file. Try
+ to read from a
+n empty file. T
+hese should ret
+urn errors.
+
+Change the seek
+ position to th
+e end of the fi
+le and try to w
+rite a new word
+ into it. Try c
+hanging the see
+k position to a
+n invalid locat
+ion (greater th
+an filesize).
+
+Open a file and
+ write some wor
+ds into that fi
+le. Open the sa
+me file again a
+nd read the wor
+ds using the ne
+w file descript
+or.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+reddy
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

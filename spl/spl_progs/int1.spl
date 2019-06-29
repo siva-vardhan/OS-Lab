@@ -1,0 +1,113 @@
+alias physicalSP S0;
+physicalSP=([PTBR+2*(SP/512)]*512)+(SP%512);
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];
+alias filename S2;
+filename=[physicalSP-3];
+breakpoint;
+if(sysCallNo==1) then
+	S3=0;
+	while(S3<64) do
+		if(filename==[FAT+(S3*8)]) then
+	          [physicalSP-2]=0;
+	          ireturn;
+		endif;
+		S3=S3+1;
+	endwhile;
+	//if(S3==64) then
+		S4=24;
+		while(S4<448) do
+			if([3072+S4]==0) then
+				break;
+			endif;
+			S4=S4+1;
+		endwhile;
+	//S4<448 free block
+	//else no free block
+		if(S4==448) then
+			[physicalSP-2]=-1;
+	        ireturn;
+		endif;
+		
+	breakpoint;	
+		S5=0;
+		while(S5<64) do
+			if([FAT+2+(S5*8)]==-1) then
+				[FAT+(S5*8)]=filename;
+				[FAT+1+(S5*8)]=0;	
+				[FAT+2+(S5*8)]=S4;
+				load(1,S4);
+				[3072+S4]=1;
+				S6=0;
+				while(S6<512) do
+					[512+S6]=-1;
+					S6=S6+1;
+				endwhile;
+				store(1,S4);
+				store(5,19);
+				store(6,20);
+				breakpoint;
+				[physicalSP-2]=0;
+	        	ireturn;
+				
+			endif;
+			S5=S5+1;
+		endwhile;
+		if(S5>=64) then
+			[physicalSP-2]=-1;
+	       	ireturn;	
+		endif;
+	//endif;
+endif;
+
+
+if(sysCallNo==4) then 
+	S3=0;
+	while(S3<64) do 
+		if(filename==[FAT+8*S3]) then 
+			break;
+		endif;	
+		S3=S3+1;
+	endwhile;
+	if(S3==64) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	S4=0;
+	while(S4<64) do
+		if([FILE_TABLE+S4*2]==S3) then
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+		S4=S4+1;
+	endwhile;
+	alias basicblock S5;
+	basicblock=[FAT+S3*8+2];
+	S6=0;
+	while(S6<256) do
+		load(1,basicblock);
+		S7=[512+S6];
+		[512+S6]="";
+		store(1,basicblock);
+		if(S7>23 && S7<448) then
+			load(1,S7);
+			S8=0;
+			while(S8<512) do
+				[512+S8]="";
+				S8=S8+1;
+			endwhile;
+			store(1,S7);
+			[3072+S7]=0;
+			store(6,20);
+		endif;
+			S6=S6+1;
+	endwhile;
+	[3072+basicblock]=0;
+	store(6,20);
+	[FAT+S3*8]=-1;
+	[FAT+S3*8+2]=-1;
+	store(5,19);
+	[physicalSP-2]=0;
+	ireturn;
+endif;
+

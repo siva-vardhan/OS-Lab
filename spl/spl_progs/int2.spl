@@ -1,0 +1,127 @@
+alias physicalSP S0;
+physicalSP=[PTBR+2*(SP/512)]*512+(SP%512);
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];
+
+if(sysCallNo==2) then
+breakpoint;
+	alias filename S2;
+	filename=[physicalSP-3];
+	alias counter S3;
+	counter=0;
+	while(counter<64) do
+		if([FAT+8*counter]==filename) then
+			break;
+		endif;
+		counter=counter+1;
+	endwhile;
+	if(counter==64) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	breakpoint;
+	
+	alias counter1 S4;
+	counter1=0;
+	while(counter1<64) do
+		if(counter==[FILE_TABLE+2*counter1]) then
+			break;
+		endif;
+	counter1=counter1+1;
+	endwhile;
+	alias pid S5;
+		pid=(PTBR-1024)/8;
+	if(counter1==64) then
+		
+		breakpoint;
+		counter1=0;
+		while(counter1<64) do
+			if([FILE_TABLE+2*counter1]==-1) then
+			break;
+		endif;
+		counter1=counter1+1;
+		endwhile;
+		if(counter1==64) then
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+		
+		breakpoint;
+		//alias pid S5;
+		//pid=(PTBR-1024)/8;
+		alias c2 S6;
+		c2=0;
+		while(c2<8) do
+			if([READY_LIST+32*pid+15+2*c2]==-1) then
+				break;
+			endif;
+			c2=c2+1;
+		endwhile;
+		if(c2==8) then
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+		
+		breakpoint;
+		[FILE_TABLE+counter1*2]=counter;
+		[READY_LIST+32*pid+15+2*c2]=counter1;
+		[FILE_TABLE+counter1*2+1]=[FILE_TABLE+counter1*2+1]+1;
+		[READY_LIST+32*pid+16+2*c2]=0;
+		[physicalSP-2]=c2;
+		ireturn;
+	endif;
+	
+	breakpoint;
+	
+		alias c2 S6;
+		c2=0;
+		while(c2<8) do
+			if([READY_LIST+32*pid+15+2*c2]==-1) then
+				break;
+			endif;
+			c2=c2+1;
+		endwhile;
+		if(c2==8) then
+			[physicalSP-2]=-1;
+			ireturn;
+		endif;
+		//[FILE_TABLE+counter1*2]=counter;
+		[READY_LIST+32*pid+15+2*c2]=counter1;
+		[FILE_TABLE+counter1*2+1]=[FILE_TABLE+counter1*2+1]+1;
+		[READY_LIST+32*pid+16+2*c2]=0;
+		[physicalSP-2]=c2;
+		ireturn;
+endif;
+
+
+
+if(sysCallNo==3) then
+	alias fileDescriptor S2;
+	fileDescriptor=[physicalSP-3];
+	//S3=0;
+	//while(S3<8) do
+		//if(fileDescriptor==S3) then
+			//break;
+		//endif;
+		//S3=S3+1;
+	//endwhile;
+	if(!(fileDescriptor>=0 && fileDescriptor<8)) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias currentpid S4;
+	currentpid=(PTBR-1024)/8;
+	if([READY_LIST+currentpid*32+15+2*fileDescriptor]==-1) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias p1 S5;
+	p1=[READY_LIST+currentpid*32+15+2*fileDescriptor];
+	[READY_LIST+currentpid*32+15+2*fileDescriptor]=-1;
+	[FILE_TABLE+2*p1+1]=[FILE_TABLE+2*p1+1]-1;
+	if([FILE_TABLE+2*p1+1]==0) then
+		[FILE_TABLE+2*p1]=-1;
+	endif;
+	[physicalSP-2]=0;
+	ireturn;
+endif;

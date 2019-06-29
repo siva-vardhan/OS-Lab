@@ -1,0 +1,99 @@
+//loading exception handler
+load(7,1);
+load(8,2);
+//loading interrupt 7
+load(23,17);
+load(24,18);
+//setting pid as 0
+[READY_LIST + 0]=0;
+//loading code from block to memory
+load(25,21);
+load(26,22);
+load(27,23);
+//
+PTBR=1024;
+PTLR=4;
+[PTBR+0]=25;
+[PTBR+1]="01";
+[PTBR+2]=26;
+[PTBR+3]="01";
+[PTBR+4]=27;
+[PTBR+5]="01";
+[PTBR+6]=28;
+[PTBR+7]="01";
+[READY_LIST+1]=2;
+SP=3*512;
+load(9,3);
+load(10,4);
+
+[28*512]=0;
+//loading int1
+load(11,5);
+load(12,6);
+
+load(5,19); //fat
+load(6,20); //dfl
+
+//setting systemwideopenfiletable
+alias counter S0;
+counter=0;
+while(counter<128) do 
+    [FILE_TABLE + counter + 0] = -1;
+    [FILE_TABLE + counter + 1] = 0;
+    counter = counter + 2;
+endwhile;
+
+//setting perprocessopenfiletable for init
+counter=0;
+while(counter<16) do 
+    [READY_LIST + 15 + counter] = -1;
+    
+    counter = counter + 1;
+endwhile;
+
+
+load(13,7);
+load(14,8);
+
+load(15,9);
+load(16,10);
+
+load(17,11);
+load(18,12);
+
+load(19,13);
+load(20,14);
+
+load(21,15);
+load(22,16);
+
+load(23,17);
+load(24,18);
+
+counter=0;
+//setting memory free list
+while(counter<64) do
+	if(counter<=28) then
+		[1280+counter]=1;
+	else
+		[1280+counter]=0;
+	endif;
+	counter=counter+1;
+endwhile;
+
+
+counter=1;
+//setting PCB state as 0
+while(counter<32) do
+	[READY_LIST+32*counter+1]=0;	
+	counter=counter+1;
+endwhile;
+counter=448;
+while(counter<512) do
+	[6*512+counter]=0;
+	counter=counter+1;
+endwhile;
+store(6,20);
+[READY_LIST+31]=0;   //ppid of init
+breakpoint;
+ireturn;

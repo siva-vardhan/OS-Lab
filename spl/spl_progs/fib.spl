@@ -1,0 +1,25 @@
+alias a S0;
+alias b S1;
+alias c S2;
+alias n S3;
+a=0;
+b=1;
+print "Enter n";
+read n;
+if(n==1) then
+    print a;
+endif;
+if(n>=2) then 
+    print a;
+    print b;
+endif;
+n=n-2;
+while(n>0) do
+    c = a+b;
+    print c;
+    a=b;
+    b=c;
+    n=n-1;
+endwhile;
+    
+   

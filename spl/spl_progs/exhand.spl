@@ -1,0 +1,127 @@
+alias cause S0;
+alias Vpagenum S1;
+alias Ip_addr S2;
+cause=EFR%10;
+Vpagenum=(EFR/10)%100;
+Ip_addr=(EFR/1000);
+
+//breakpoint;
+alias physicalSP S15;
+
+
+if(cause!=0) then
+	if(cause==1) then
+		print "Illegal instruction";
+	endif;
+	if(cause==2) then
+		print "Illegal memory access";
+	endif;
+	if(cause==3) then
+		print "Arithmetic exception";
+	endif;
+	if(cause==4) then
+		print "Illegal operands";
+	endif;
+	//SP=SP+2;
+	physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+	//[physicalSP-1]=10;
+	//[physicalSP]=Ip_addr;
+
+	inline "JMP 11776";
+endif;
+
+if([PTBR+2*Vpagenum]<0) then
+	//SP=SP+2;
+	//physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+	//[physicalSP-1]=10;
+	//[physicalSP]=Ip_addr;
+
+	inline "JMP 11776";
+endif;
+//breakpoint;
+
+alias counter S3;
+counter=0;
+while(counter<64) do
+	if([1280+counter]==0) then
+		[1280+counter]=1;
+		break;
+	endif;
+	counter=counter+1;
+endwhile;
+//breakpoint;
+
+if(counter==64) then
+	alias counter1 S4;
+	//counter1=0;
+	//breakpoint;
+	counter1=Vpagenum;
+	S5=PTBR+2*counter1;
+
+	while(1) do
+	
+		if(S5>=1280) then
+			S5=1024+S5%1280;
+			//S5=S5-256;
+			counter1=0;
+			//continue;
+		endif;
+		if(counter1%4!=3) then
+			if([S5+1]=="11" && [1280+[S5]]<=1) then
+				[S5+1]="01";
+			else
+				if([S5+1]=="01" && [1280+[S5]]<=1) then
+					break;
+				endif;
+			endif;
+			//counter1=counter1+1;
+			counter1=counter1+1;
+			S5=S5+2;
+			//counter=S5/2-1024;
+	
+			//counter1=counter1+1;
+			//counter=counter+1;
+			//S5=S5+2;
+		endif;
+	endwhile;
+	//breakpoint;
+	
+	alias counter2 S6;
+	counter2=448;
+	while(counter2<512) do
+		if([6*512+counter2]==0) then
+			[6*512+counter2]=1;
+			store(6,20);
+			break;
+		endif;
+		counter2=counter2+1;
+	endwhile;
+	//breakpoint;
+	
+	if(counter2==512) then
+		inline "JMP 11776";
+	endif;
+	store([S5],counter2);
+	counter=[S5];
+	[S5]=counter2;
+	[S5+1]="00";
+	
+endif;
+alias phypageno S7;
+phypageno=[PTBR+2*Vpagenum];
+if(phypageno>=448 && phypageno<512 && [PTBR+2*Vpagenum+1]=="00") then
+	load(counter,phypageno);
+	[6*512+phypageno]=[6*512+phypageno]-1;
+	store(6,20);
+endif;
+if(phypageno>=21 && phypageno<448 && [PTBR+2*Vpagenum+1]=="00") then
+	load(counter,phypageno);
+endif;
+[PTBR+2*Vpagenum]=counter;
+[PTBR+2*Vpagenum+1]="11";
+SP=SP+1;
+//alias physicalSP S8;
+physicalSP=([PTBR+2*(SP/512)]*512)+SP%512;
+[physicalSP]=Ip_addr;
+breakpoint;
+ireturn;

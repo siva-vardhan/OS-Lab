@@ -1,0 +1,23 @@
+alias i S0;
+alias j S1;
+alias n S2;
+alias count S3;
+print "enter n:";
+read n;
+print "primes are:";
+i = 2;
+while(i <= n) do
+     count = 0;
+     j = 2; 
+     while(j < i) do 
+          if(i%j == 0) then
+             count = count + 1;
+          endif;
+          j = j + 1;
+     endwhile;
+     if(count == 0) then
+         print i;
+     endif;
+     i=i+1;
+endwhile;
+

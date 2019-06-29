@@ -1,0 +1,165 @@
+alias physicalSP S0;
+physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];
+if(sysCallNo==10) then
+//breakpoint;
+	alias counter S2;
+	counter=0;
+	alias pid S3;
+	pid=(PTBR-1024)/8;
+	alias currentPCB S4;
+	currentPCB=READY_LIST+pid*32;
+	if([currentPCB+1]==2) then 
+		while(counter<32) do
+			if([READY_LIST+32*counter+1]==100+pid) then
+				[READY_LIST+32*counter+1]=1;
+			endif;
+			counter=counter+1;
+		endwhile;
+	endif;	
+	counter=0;
+	while(counter<32) do	
+		if([READY_LIST+32*((pid+1+counter)%32)+1]==1 ) then
+			break;
+		endif;
+		counter=counter+1;
+	endwhile;
+	if(counter==32) then
+		breakpoint;
+		//print "SIVA";
+		halt;
+	endif;
+	
+	alias newPCB S5;
+	newPCB=READY_LIST+32*((pid+counter+1)%32);
+	S6=0;
+	alias p1 S7;
+	if([currentPCB+1]==2) then 
+		while(S6<8) do
+			p1=[READY_LIST+pid*32+15+S6*2];
+			if(p1!=-1) then
+				[READY_LIST+pid*32+15+S6*2]=-1;
+				if([FILE_TABLE+p1*2+1]>1) then
+					[FILE_TABLE+p1*2+1]=[FILE_TABLE+p1*2+1]-1;
+				else 
+					[FILE_TABLE+p1*2]=-1;
+					[FILE_TABLE+p1*2+1]=0;
+				endif;
+			endif;
+			S6=S6+1;
+		endwhile;
+		[currentPCB+1]=0;
+		S9=0;
+		while(S9<4) do
+			S10=[PTBR+2*S9];
+			if(S10!=-1 && [PTBR+2*S9+1]!="00") then
+				[1280+S10]=0;
+			endif;
+			[PTBR+2*S9]=-1;
+			[PTBR+2*S9+1]="00";
+			S9=S9+1;
+		endwhile;
+	endif;
+	[newPCB+1]=2;
+	BP=[newPCB+2];
+	SP=[newPCB+3];
+	
+	PTBR=[newPCB+5];
+	PTLR=[newPCB+6];
+	R0=[newPCB+7];
+	R1=[newPCB+8];
+	R2=[newPCB+9];
+	R3=[newPCB+10];
+	R4=[newPCB+11];
+	R5=[newPCB+12];
+	R6=[newPCB+13];
+	R7=[newPCB+14];
+	//print "siva";
+	SP=SP+1;
+	physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+	[physicalSP]=[newPCB+4];
+	breakpoint;
+	ireturn;
+endif;
+
+if(sysCallNo==13) then
+	alias waitingPID S2;
+	waitingPID=[physicalSP-3];
+	if([READY_LIST+32*waitingPID+1]==2 || [READY_LIST+32*waitingPID+1]==0) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+			[physicalSP-2]=0;
+	alias pid S3;
+	pid=(PTBR-1024)/8;
+	[READY_LIST+32*pid+1]=100+waitingPID;
+	
+	[READY_LIST+32*pid+2]=BP;
+	[READY_LIST+32*pid+3]=SP-1;
+	[READY_LIST+32*pid+4]=[physicalSP];
+	[READY_LIST+32*pid+5]=PTBR;
+	[READY_LIST+32*pid+6]=PTLR;
+	[READY_LIST+32*pid+7]=R0;
+	[READY_LIST+32*pid+8]=R1;
+	[READY_LIST+32*pid+9]=R2;
+	[READY_LIST+32*pid+10]=R3;
+	[READY_LIST+32*pid+11]=R4;
+	[READY_LIST+32*pid+12]=R5;
+	[READY_LIST+32*pid+13]=R6;
+	[READY_LIST+32*pid+14]=R7;
+	//breakpoint;
+	[physicalSP-1]=10;
+	inline "JMP 11776";
+	
+	//alias counter S4;
+	//counter=0;
+	//while(counter<32) do
+		//if([READY_LIST+32*counter+1]==1) then
+			//break;
+		//endif;
+		//counter=counter+1;
+	//endwhile;
+	//if(counter==32) then
+		//halt;
+	//else
+		//[READY_LIST+32*counter+1]=2;
+		//BP=[READY_LIST+32*counter+2];
+		//SP=[READY_LIST+32*counter+3];
+
+		//PTBR=[READY_LIST+32*counter+5];
+		//PTLR=[READY_LIST+32*counter+6];
+		//R0=[READY_LIST+32*counter+7];
+		//R1=[READY_LIST+32*counter+8];
+		//R2=[READY_LIST+32*counter+9];
+		//R3=[READY_LIST+32*counter+10];
+		//R4=[READY_LIST+32*counter+11];
+		//R5=[READY_LIST+32*counter+12];
+		//R6=[READY_LIST+32*counter+13];
+		//R7=[READY_LIST+32*counter+14];
+		
+		//alias newphysicalSP S5;
+		//SP=SP+1;
+		//newphysicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+		//[newphysicalSP]=[READY_LIST+32*counter+4];
+		//ireturn;
+	//endif;
+endif;
+
+
+if(sysCallNo==14) then
+	alias pid S2;
+	pid=(PTBR-1024)/8;
+	alias counter S3;
+	counter=0;
+	while(counter<32) do
+		if([READY_LIST+32*counter+1]==100+pid) then
+			[READY_LIST+32*counter+1]=1;
+		endif;
+		counter=counter+1;
+	endwhile;
+	[physicalSP-2]=0;
+	breakpoint;
+	ireturn;
+endif;
+

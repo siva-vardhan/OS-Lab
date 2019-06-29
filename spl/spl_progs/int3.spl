@@ -1,0 +1,76 @@
+alias physicalSP S0;
+physicalSP=[PTBR+2*(SP/512)]*512+SP%512;
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];
+if(sysCallNo==6) then
+	alias fileDescriptor S2;
+	alias newLseek S3;
+	fileDescriptor=[physicalSP-4];
+	newLseek=[physicalSP-3];
+	if(fileDescriptor<0 || fileDescriptor>=8) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias currentpid S4;
+	currentpid=(PTBR-1024)/8;
+	alias p1 S5;
+	p1=[READY_LIST+32*currentpid+15+2*fileDescriptor];
+	if(p1==-1) then 
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias p2 S6;
+	p2=[FILE_TABLE+2*p1];
+	alias filesize S7;
+	filesize=[FAT+8*p2+1];
+	if(!(newLseek>=0 && newLseek<filesize)) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	[READY_LIST+32*currentpid+15+2*fileDescriptor+1]=newLseek;
+	[physicalSP-2]=0;
+	ireturn;
+endif;
+
+
+
+
+if(sysCallNo==7) then 
+	alias fileDescriptor S2;
+	alias wordRead S3;
+	fileDescriptor=[physicalSP-4];
+	if(fileDescriptor<0 || fileDescriptor>=8) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias currentpid S4;
+	currentpid=(PTBR-1024)/8;
+	alias p1 S5;
+	p1=[READY_LIST+32*currentpid+15+2*fileDescriptor];
+	if(p1==-1) then 
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias p2 S6;
+	p2=[FILE_TABLE+2*p1];
+	alias basic S7;
+	basic=[FAT+8*p2+2];
+	load(1,basic);
+	alias filesize S8;
+	filesize=[FAT+8*p2+1];
+	alias LSeek S9;
+	LSeek=[READY_LIST+32*currentpid+15+2*fileDescriptor+1];
+	if(LSeek>=filesize) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias datab S10;
+	datab=[512+LSeek/512];
+	load(1,datab);
+	wordRead=[512+LSeek%512];
+	[physicalSP-3]=wordRead;
+	LSeek=LSeek+1;
+	[READY_LIST+32*currentpid+15+2*fileDescriptor+1]=LSeek;
+	[physicalSP-2]=0;
+	ireturn;
+endif;

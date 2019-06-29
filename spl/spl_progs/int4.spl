@@ -1,0 +1,69 @@
+alias physicalSP S0;
+physicalSP=[PTBR+2*(SP/512)]*512+(SP%512);
+alias sysCallNo S1;
+sysCallNo=[physicalSP-1];	
+if(sysCallNo==5) then
+	alias fileDescriptor S2;
+	alias wordToWrite S3;
+	fileDescriptor=[physicalSP-4];
+	wordToWrite=[physicalSP-3];
+	if(fileDescriptor<0 || fileDescriptor>=8) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias currentpid S4;
+	currentpid=(PTBR-1024)/8;
+	if([READY_LIST+32*currentpid+15+2*fileDescriptor]==-1) then
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	alias p1 S5;
+	alias LSeek S6;
+	p1=[READY_LIST+32*currentpid+15+2*fileDescriptor];
+	LSeek=[READY_LIST+32*currentpid+15+2*fileDescriptor+1];
+	alias p2 S7;
+	p2=[FILE_TABLE+2*p1];
+	alias basic S8;
+	basic=[FAT+p2*8+2];
+	load(1,basic);
+	alias page S9;
+	page=LSeek/512;
+	if([512+page]!=-1) then
+		alias datablock S10;
+		datablock=[512+page];
+		load(1,datablock);
+		[512+(LSeek%512)]=wordToWrite;
+		store(1,datablock);
+		[physicalSP-2]=0;
+		LSeek=LSeek+1;
+		[READY_LIST+32*currentpid+15+2*fileDescriptor+1]=LSeek;
+		ireturn;
+	endif;
+	S11=24;
+	while(S11<448) do 
+		if([3072+S11]==0) then 
+			break;
+		endif;	
+		S11=S11+1;
+	endwhile;
+	if(S11==448) then 
+		[physicalSP-2]=-1;
+		ireturn;
+	endif;
+	[3072+S11]=1;
+	store(6,20);
+	load(1,basic);
+	[512+page]=S11;
+	store(1,basic);
+	//alias currentpid S12;
+	currentpid=(PTBR-1024)/8;
+	[FAT+8*p2+1]=[FAT+8*p2+1]+512;
+	store(5,19);
+	load(1,S11);
+	[512+(LSeek%512)]=wordToWrite;
+	store(1,S11);
+	[physicalSP-2]=0;
+	LSeek=LSeek+1;
+	[READY_LIST+32*currentpid+15+2*fileDescriptor+1]=LSeek;
+	ireturn;
+endif;
