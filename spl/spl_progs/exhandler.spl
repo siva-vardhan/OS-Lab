@@ -27,6 +27,7 @@ if([PTBR+2*Vpagenum]==-1) then
 endif;
 //breakpoint;
 
+//checking for free page in memory
 alias counter S3;
 counter=0;
 while(counter<64) do
@@ -39,6 +40,7 @@ endwhile;
 //breakpoint;
 alias counter2 S6;
 
+//memory is full and page replacement algorithm
 if(counter==64) then
 	alias counter1 S4;
 	//counter1=0;
@@ -58,31 +60,31 @@ if(counter==64) then
 			//continue;
 	 //endif;
 	 	if(counter1 %4 !=3) then
-		if([S5+2*counter1+1]=="11" && [1280+[S5+2*counter1]]<=1) then
-			[S5+2*counter1+1]="01";
-		else
-			if([S5+2*counter1+1]=="01" && [1280+[S5+2*counter1]]<=1) then
-				counter2=448;
-				while(counter2<512) do
-					if([6*512+counter2]==0) then
-						[6*512+counter2]=1;
-						store(6,20);
+			if([S5+2*counter1+1]=="11" && [1280+[S5+2*counter1]]<=1) then
+				[S5+2*counter1+1]="01";
+			else
+				if([S5+2*counter1+1]=="01" && [1280+[S5+2*counter1]]<=1) then
+					counter2=448;
+					while(counter2<512) do
+						if([6*512+counter2]==0) then
+							[6*512+counter2]=1;
+							store(6,20);
 						
-						break;
-					endif;
-				counter2=counter2+1;
-				endwhile;
+							break;
+						endif;
+						counter2=counter2+1;
+					endwhile;
 	//breakpoint;
-				if(counter2==512) then
-					inline "JMP 11776";
+					if(counter2==512) then
+						inline "JMP 11776";
+					endif;
+					store([S5+2*counter1],counter2);
+					counter=[S5+2*counter1];
+					[S5+2*counter1]=counter2;
+					[S5+2*counter1+1]="00";
+					break;
 				endif;
-				store([S5+2*counter1],counter2);
-				counter=[S5+2*counter1];
-				[S5+2*counter1]=counter2;
-				[S5+2*counter1+1]="00";
-				break;
 			endif;
-		endif;
 		endif;
 		//counter1=counter1+1;
 		counter1=counter1+1;
