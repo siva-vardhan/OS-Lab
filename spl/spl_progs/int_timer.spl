@@ -53,7 +53,7 @@ S4=currentPID;
 S5=0;
 alias checkpcb S6;
 while(S5<32)do
-	checkpcb=1536+32*((S4+1)%32);
+	checkpcb=READY_LIST+32*((S4+1)%32);
 	if([checkpcb+1]==1)then
 		newPCB=checkpcb;
 		break;
