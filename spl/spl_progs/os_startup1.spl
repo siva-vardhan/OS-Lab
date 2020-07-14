@@ -63,5 +63,4 @@ PTBR_process1=1024+8;
 //[READY_LIST +(2*32)+3] = 3 * 512; // Sets the entry for SP in the PCB 
 //[READY_LIST +(2*32)+4] = 0;
 
-
 ireturn;
