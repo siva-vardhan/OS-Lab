@@ -2,6 +2,9 @@ Experimental Operating System (XOS)
 ===================================
 Version 1.0.1
 --------------
+Created a virtual operating System on simulated machine Hardware to understand how the resources of the system are managed i.e., process management, memory management(Virtualisation using Demand- Paging) and some other basic features for working of an OS.
+Implemented Schedulers for multiprogramming, file management algorithms, process System Calls, exception handler and Demand paging algorithm.
+--------------------
 This is a platform for building a simple operating system upon a simulated machine hardware. Various components have been provided in this development package. 
 
 For instructions and detailed documentation, visit
@@ -15,11 +18,6 @@ SPL-Compiler
 XFS-Interface
 XSM
 
-ChangeLog
-=========
-* SPL Compiler Fixes
-	-- Fixed incorrect string comparision
-	-- Fixed incorrect format of 'store' compilation.
 
 Compiling
 =========
