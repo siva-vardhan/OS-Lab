@@ -28,11 +28,5 @@ and use 'make' command.
 
 * To recompile each component, within the corresponding directory, first use 'make clean' and then use 'make' command.
 
-Mailing Lists
-=============
-* Users
-xos-users@googlegroups.com
 
-* Contributors
-xos-developers@googlegroups.com
 
